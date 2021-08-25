@@ -17,31 +17,33 @@ pub fn go(env: &[Term], term: &Term) -> Term {
     Term::Type => unreachable!("cannot write Type in concrete syntax"),
     Term::Var(v) => env.get(env.len() - 1 - *v).expect("not in scope").clone(),
     Term::App(func, arg) => {
-      let func_ty = go(env, func);
+      let func_ty = wh(go(env, func));
       let arg_ty = go(env, arg);
       let (ann, mut body_ty) = match func_ty {
         Term::Pi(a, b) => (*a, *b),
         _ => panic!("App func ty not Pi"),
       };
       // NOTE: alpha-equivalence is just `==`
-      assert_eq!(ann, arg_ty, "not alpha-equivalent");
+      assert_eq!(wh(ann), wh(arg_ty), "not alpha-equivalent");
       subst(0, arg, &mut body_ty);
       body_ty
     }
     Term::Lam(ann, body) => {
-      go(env, ann);
-      let new_env = env_ins(env.to_vec(), (**ann).clone());
+      let ann = wh((**ann).clone());
+      go(env, &ann);
+      let new_env = env_ins(env.to_vec(), ann.clone());
       let body_ty = go(&new_env, body);
+      let ret = Term::Pi(Box::new(ann), Box::new(body_ty));
       // TODO do we need to check for valid pi?
-      let ret = Term::Pi(ann.clone(), Box::new(body_ty));
       go(env, &ret);
       ret
     }
     Term::Pi(ann, body) => {
-      let ann_ty = go(env, ann);
+      let ann = wh((**ann).clone());
+      let ann_ty = wh(go(env, &ann));
       assert!(is_sort(&ann_ty), "failed: {:?}", ann_ty);
-      let new_env = env_ins(env.to_vec(), (**ann).clone());
-      let ret = go(&new_env, body);
+      let new_env = env_ins(env.to_vec(), ann);
+      let ret = wh(go(&new_env, body));
       assert!(is_sort(&ret), "failed: {:?} for {:?}", ret, body);
       ret
     }
@@ -72,6 +74,8 @@ fn subst(var: Var, var_term: &Term, term: &mut Term) {
   }
 }
 
+/// lifts up free variables in `term`, so that it may be inserted into the body
+/// of a single additional binder.
 fn lift(free: Var, term: &mut Term) {
   match term {
     Term::Prop | Term::Type => {}
@@ -91,10 +95,25 @@ fn lift(free: Var, term: &mut Term) {
   }
 }
 
+/// returns the weak head normal form of `tm`.
+fn wh(term: Term) -> Term {
+  match term {
+    Term::App(func, arg) => match wh(*func) {
+      Term::Lam(_, mut body) => {
+        subst(0, &arg, &mut body);
+        wh(*body)
+      }
+      func => Term::App(Box::new(func), arg),
+    },
+    _ => term,
+  }
+}
+
 fn is_sort(term: &Term) -> bool {
   matches!(*term, Term::Prop | Term::Type)
 }
 
+/// `tm` should be in WHNF.
 fn env_ins(mut env: Vec<Term>, tm: Term) -> Vec<Term> {
   env.push(tm);
   for tm in env.iter_mut() {

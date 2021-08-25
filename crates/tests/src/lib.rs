@@ -126,3 +126,11 @@ forall x: m a. m a
 "#,
   );
 }
+
+#[test]
+fn id_with_id() {
+  check(
+    "fn a: *. fn x: (fn y: *. y) a. x",
+    "forall a: *. forall x: a. a",
+  );
+}
