@@ -69,3 +69,60 @@ fn apply() {
     "forall A: *. forall B: *. forall f: (forall y: A. B). forall x: A. B",
   )
 }
+
+#[test]
+fn bind_ty() {
+  check(
+    r#"
+forall m: (forall t: *. *). forall a: *. forall b: *.
+forall x: m a. forall f: (forall y: a. m b). m b
+"#,
+    "*",
+  )
+}
+
+#[test]
+fn bind_pure_is_m_id() {
+  check(
+    r#"
+# the monad
+fn m: (forall t: *. *).
+# bind (with func first)
+fn bind: (
+  forall a: *. forall b: *.
+  forall f: (forall x: a. m b). forall x: m a.
+  m b
+).
+# pure
+fn pure: (
+  forall a: *.
+  forall x: a.
+  m a
+).
+# a type variable
+fn a: *.
+# app
+bind a a (pure a)
+"#,
+    r#"
+# the monad
+forall m: (forall t: *. *).
+# bind (with func first)
+forall bind: (
+  forall a: *. forall b: *.
+  forall f: (forall x: a. m b). forall x: m a.
+  m b
+).
+# pure
+forall pure: (
+  forall a: *.
+  forall x: a.
+  m a
+).
+# a type variable
+forall a: *.
+# id (for m)
+forall x: m a. m a
+"#,
+  );
+}
