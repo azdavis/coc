@@ -116,6 +116,7 @@ fn is_sort(term: &Term) -> bool {
 /// `tm` should be in WHNF.
 fn env_ins(mut env: Vec<Term>, tm: Term) -> Vec<Term> {
   env.push(tm);
+  // TODO: figure out a way to not do this? so inefficient.
   for tm in env.iter_mut() {
     lift(0, tm);
   }
