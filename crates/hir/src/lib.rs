@@ -46,13 +46,13 @@ impl Term {
         f.write_str(&var(n))
       }
       Term::App(func, arg) => {
-        if prec != Prec::A {
+        if prec == Prec::C {
           f.write_str("(")?;
         }
-        func.show(f, prec, vars)?;
+        func.show(f, Prec::B, vars)?;
         f.write_str(" ")?;
-        arg.show(f, Prec::B, vars)?;
-        if prec != Prec::A {
+        arg.show(f, Prec::C, vars)?;
+        if prec == Prec::C {
           f.write_str(")")?;
         }
         Ok(())
@@ -90,6 +90,7 @@ fn show_lam_like(
 enum Prec {
   A,
   B,
+  C,
 }
 
 impl fmt::Display for Term {
