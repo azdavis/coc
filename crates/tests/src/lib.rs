@@ -61,3 +61,11 @@ fn fst() {
     "forall a: *. forall b: *. forall x: a. forall y: b. a",
   );
 }
+
+#[test]
+fn apply() {
+  check(
+    "fn a: *. fn b: *. fn f: (forall x: a. b). fn y: a. f y",
+    "forall A: *. forall B: *. forall f: (forall y: A. B). forall x: A. B",
+  )
+}

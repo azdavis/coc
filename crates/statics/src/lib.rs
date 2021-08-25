@@ -56,10 +56,8 @@ fn subst(var: Var, var_term: &Term, term: &mut Term) {
     Term::Var(v) => match (*v).cmp(&var) {
       Ordering::Less => {}
       Ordering::Equal => *term = var_term.clone(),
-      Ordering::Greater => {
-        // TODO if we allow for unbound variables, this should be `*v -= 1`
-        unreachable!()
-      }
+      // see the test `apply` for why this is necessary
+      Ordering::Greater => *v -= 1,
     },
     Term::App(func, arg) => {
       subst(var, var_term, func);
