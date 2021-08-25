@@ -1,0 +1,12 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+doctest = false
+
+[dependencies]
+hir = { path = "../hir" }
+parse = { path = "../parse" }
+statics = { path = "../statics" }
