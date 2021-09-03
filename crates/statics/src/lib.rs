@@ -15,7 +15,11 @@ pub fn go(env: &[Term], term: &Term) -> Term {
   match term {
     Term::Prop => Term::Type,
     Term::Type => unreachable!("cannot write Type in concrete syntax"),
-    Term::Var(v) => env.get(env.len() - 1 - *v).expect("not in scope").clone(),
+    Term::Var(v) => {
+      let mut ret = env.get(env.len() - 1 - *v).expect("not in scope").clone();
+      lift(*v + 1, 0, &mut ret);
+      ret
+    }
     Term::App(func, arg) => {
       let func_ty = wh(go(env, func));
       let arg_ty = go(env, arg);
@@ -68,7 +72,7 @@ fn subst(var: Var, var_term: &Term, term: &mut Term) {
     Term::Lam(ann, body) | Term::Pi(ann, body) => {
       subst(var, var_term, ann);
       let mut var_term = var_term.clone();
-      lift(0, &mut var_term);
+      lift(1, 0, &mut var_term);
       subst(var + 1, &var_term, body);
     }
   }
@@ -76,21 +80,21 @@ fn subst(var: Var, var_term: &Term, term: &mut Term) {
 
 /// lifts up free variables in `term`, so that it may be inserted into the body
 /// of a single additional binder.
-fn lift(free: Var, term: &mut Term) {
+fn lift(by: usize, free: Var, term: &mut Term) {
   match term {
     Term::Prop | Term::Type => {}
     Term::Var(v) => {
       if *v >= free {
-        *v += 1;
+        *v += by;
       }
     }
     Term::App(func, arg) => {
-      lift(free, func);
-      lift(free, arg);
+      lift(by, free, func);
+      lift(by, free, arg);
     }
     Term::Lam(ann, body) | Term::Pi(ann, body) => {
-      lift(free, ann);
-      lift(free + 1, body);
+      lift(by, free, ann);
+      lift(by, free + 1, body);
     }
   }
 }
@@ -116,9 +120,5 @@ fn is_sort(term: &Term) -> bool {
 /// `tm` should be in WHNF.
 fn env_ins(mut env: Vec<Term>, tm: Term) -> Vec<Term> {
   env.push(tm);
-  // TODO: figure out a way to not do this? so inefficient.
-  for tm in env.iter_mut() {
-    lift(0, tm);
-  }
   env
 }
