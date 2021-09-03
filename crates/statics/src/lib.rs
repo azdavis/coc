@@ -8,9 +8,7 @@
 use hir::{Term, Var};
 use std::cmp::Ordering;
 
-/// TODO return the term's normal form and its type, not just its type? doesn't
-/// seem easy to do without HOAS? is a variable in normal form? what about
-/// reducing to normal form to handle applications?
+/// Returns the type of the term under the environment.
 pub fn go(env: &[Term], term: &Term) -> Term {
   match term {
     Term::Prop => Term::Type,
@@ -38,7 +36,7 @@ pub fn go(env: &[Term], term: &Term) -> Term {
       let new_env = env_ins(env.to_vec(), ann.clone());
       let body_ty = go(&new_env, body);
       let ret = Term::Pi(Box::new(ann), Box::new(body_ty));
-      // TODO do we need to check for valid pi?
+      // TODO do we really *need* to check for valid pi?
       go(env, &ret);
       ret
     }
