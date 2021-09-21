@@ -15,10 +15,12 @@ impl<'a> Scope<'a> {
   }
 
   pub(crate) fn get(&self, s: &str) -> Var {
-    let i = self
+    let (i, _) = self
       .vars
       .iter()
-      .position(|&v| v == s)
+      .enumerate()
+      .rev()
+      .find(|&(_, &v)| v == s)
       .expect("not in scope");
     self.vars.len() - 1 - i
   }
